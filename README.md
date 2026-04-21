@@ -1,93 +1,103 @@
 # csv-to-api
 
-![Node.js](https://img.shields.io/badge/Node.js-20+-green) ![Express](https://img.shields.io/badge/Express-4.x-blue) ![License](https://img.shields.io/badge/license-MIT-orange)
+![CI](https://github.com/Quesillo27/csv-to-api/actions/workflows/ci.yml/badge.svg) ![Node.js](https://img.shields.io/badge/Node.js-20+-green) ![License](https://img.shields.io/badge/license-MIT-orange)
 
-Convierte cualquier archivo CSV en una REST API al instante. Sube un CSV y obtén endpoints con filtros, ordenamiento, paginación y estadísticas — sin base de datos, sin configuración.
+Convierte archivos CSV en una REST API lista para explorar datos sin montar una base de datos. La revision 1.1.0 agrega validacion estricta de queries, respuestas uniformes, metrics reales de salud y endpoints de exploracion de esquema y valores distintos.
 
-## Instalación en 3 comandos
+## Instalacion en 3 comandos
 
 ```bash
 git clone https://github.com/Quesillo27/csv-to-api
 cd csv-to-api
-npm install
+./setup.sh
 ```
 
-## Uso
+## Uso rapido
 
 ```bash
-npm start   # inicia el servidor en puerto 3000
+make dev
 ```
 
-## Ejemplo
-
 ```bash
-# 1. Subir un CSV inline
+# crear dataset inline
 curl -s -X POST http://localhost:3000/datasets/inline \
   -H "Content-Type: text/plain" \
-  --data-binary "nombre,edad,ciudad
-Alice,30,Madrid
-Bob,25,Barcelona
-Carol,35,Madrid"
+  --data-binary "name,age,city,salary
+Alice,30,Madrid,50000
+Bob,25,Barcelona,42000
+Carol,35,Madrid,65000"
 
-# → {"id":"a1b2c3d4","rows":3,"columns":["nombre","edad","ciudad"],...}
+# explorar esquema
+curl -s http://localhost:3000/datasets/<id>/schema
 
-# 2. Consultar datos con filtros
-curl "http://localhost:3000/datasets/a1b2c3d4/data?ciudad=Madrid&sort=edad&order=asc"
-# → {"data":[{"nombre":"Alice",...},{"nombre":"Carol",...}],"meta":{"total":2,...}}
-
-# 3. Ver estadísticas de columnas
-curl "http://localhost:3000/datasets/a1b2c3d4/stats"
-# → {"stats":{"edad":{"type":"numeric","min":25,"max":35,...},...}}
+# listar valores distintos de una columna
+curl -s "http://localhost:3000/datasets/<id>/distinct/city?search=mad"
 ```
-
-## API — Endpoints disponibles
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/health` | Estado del servicio |
-| GET | `/datasets` | Listar todos los datasets cargados |
-| POST | `/datasets` | Subir CSV como multipart/form-data (campo: `file`) |
-| POST | `/datasets/inline` | Subir CSV como body text/plain |
-| GET | `/datasets/:id` | Info del dataset (filas, columnas, fecha) |
-| GET | `/datasets/:id/data` | Consultar datos con filtros/sort/paginación |
-| GET | `/datasets/:id/data/:index` | Obtener fila por índice (0-based) |
-| GET | `/datasets/:id/stats` | Estadísticas por columna (min/max/media/top valores) |
-| DELETE | `/datasets/:id` | Eliminar dataset |
-
-## Filtros disponibles en `/data`
-
-| Parámetro | Ejemplo | Descripción |
-|-----------|---------|-------------|
-| `campo=valor` | `?ciudad=Madrid` | Igualdad exacta |
-| `campo__contains=valor` | `?nombre__contains=ali` | Contiene (case-insensitive) |
-| `campo__startswith=valor` | `?nombre__startswith=A` | Empieza con |
-| `campo__endswith=valor` | `?nombre__endswith=a` | Termina con |
-| `campo__gt=valor` | `?edad__gt=30` | Mayor que |
-| `campo__gte=valor` | `?edad__gte=30` | Mayor o igual |
-| `campo__lt=valor` | `?salario__lt=50000` | Menor que |
-| `campo__lte=valor` | `?salario__lte=50000` | Menor o igual |
-| `campo__ne=valor` | `?ciudad__ne=Madrid` | Distinto de |
-| `sort=campo` | `?sort=edad` | Ordenar por campo |
-| `order=asc\|desc` | `?order=desc` | Dirección de orden |
-| `page=N` | `?page=2` | Página (default: 1) |
-| `limit=N` | `?limit=20` | Registros por página (default: 20, max: 1000) |
-| `fields=a,b` | `?fields=nombre,ciudad` | Seleccionar columnas específicas |
 
 ## Variables de entorno
 
-| Variable | Default | Descripción |
-|----------|---------|-------------|
-| `PORT` | `3000` | Puerto del servidor |
-| `UPLOAD_DIR` | `./uploads` | Directorio para CSVs subidos por archivo |
-| `MAX_FILE_SIZE_MB` | `10` | Tamaño máximo de archivo en MB |
+| Variable | Descripcion | Default | Obligatoria |
+|----------|-------------|---------|-------------|
+| `PORT` | Puerto HTTP del servicio | `3000` | No |
+| `UPLOAD_DIR` | Directorio donde multer guarda CSVs subidos | `./uploads` | No |
+| `MAX_FILE_SIZE_MB` | Tamano maximo por archivo CSV | `10` | No |
+| `INLINE_CSV_LIMIT_MB` | Limite para `POST /datasets/inline` | `10` | No |
+| `DEFAULT_PAGE_SIZE` | Tamano de pagina por defecto | `20` | No |
+| `MAX_PAGE_SIZE` | Limite maximo de pagina | `1000` | No |
+| `CORS_ORIGINS` | Lista separada por comas de origenes permitidos | `http://localhost:3000,http://127.0.0.1:3000` | No |
+| `RATE_LIMIT_WINDOW_MS` | Ventana del rate limit | `900000` | No |
+| `RATE_LIMIT_MAX_REQUESTS` | Requests maximos por IP y ventana | `300` | No |
+
+## API
+
+| Metodo | Endpoint | Descripcion |
+|--------|----------|-------------|
+| GET | `/health` | Estado del servicio, version, datasets cargados y metrics |
+| GET | `/datasets` | Lista datasets cargados en memoria |
+| POST | `/datasets` | Sube CSV via `multipart/form-data` (`file`) |
+| POST | `/datasets/inline` | Crea dataset enviando CSV como `text/plain` |
+| GET | `/datasets/:id` | Metadata del dataset |
+| GET | `/datasets/:id/schema` | Esquema inferido por columna |
+| GET | `/datasets/:id/distinct/:field` | Valores distintos con conteo, search, limit y offset |
+| GET | `/datasets/:id/data` | Consulta filas con filtros, sort, paginacion y seleccion de campos |
+| GET | `/datasets/:id/data/:index` | Devuelve una fila por indice |
+| GET | `/datasets/:id/stats` | Estadisticas numericas y categoricas por columna |
+| DELETE | `/datasets/:id` | Elimina dataset y archivo temporal si existe |
+
+## Filtros soportados en `/datasets/:id/data`
+
+| Parametro | Ejemplo | Descripcion |
+|-----------|---------|-------------|
+| `campo=valor` | `?city=Madrid` | Igualdad exacta |
+| `campo__contains=valor` | `?name__contains=ali` | Contiene sin distinguir mayusculas |
+| `campo__startswith=valor` | `?name__startswith=A` | Prefijo |
+| `campo__endswith=valor` | `?name__endswith=a` | Sufijo |
+| `campo__gt=valor` | `?salary__gt=50000` | Mayor que |
+| `campo__gte=valor` | `?age__gte=30` | Mayor o igual |
+| `campo__lt=valor` | `?salary__lt=50000` | Menor que |
+| `campo__lte=valor` | `?salary__lte=50000` | Menor o igual |
+| `campo__ne=valor` | `?city__ne=Madrid` | Distinto |
+| `sort=campo` | `?sort=age` | Ordena por columna valida |
+| `order=asc\|desc` | `?order=desc` | Direccion de orden |
+| `page=N` | `?page=2` | Numero de pagina |
+| `limit=N` | `?limit=20` | Tamano de pagina |
+| `fields=a,b` | `?fields=name,city` | Proyeccion de columnas |
 
 ## Docker
 
 ```bash
 docker build -t csv-to-api .
-docker run -p 3000:3000 csv-to-api
+docker run --rm -p 3000:3000 --env CORS_ORIGINS=http://localhost:3000 csv-to-api
 ```
 
-## Contribuir
+## Calidad y DX
 
-PRs bienvenidos. Corre `npm test` antes de enviar.
+- `make dev`, `make test`, `make build`, `make docker`, `make lint`
+- `./setup.sh` instala dependencias y prepara `.env`
+- `npm test` ejecuta 29 pruebas de comportamiento real
+
+## Roadmap
+
+- Persistencia opcional en SQLite/PostgreSQL para datasets grandes o reinicios de proceso
+- Cache de resultados para queries repetidas sobre datasets pesados
+- Importacion remota segura desde URL firmadas o almacenamiento S3
