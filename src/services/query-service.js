@@ -70,6 +70,18 @@ function validateQuery(headers, query) {
   return validateSelectionFields(headers, query.fields);
 }
 
+function validateDistinctQuery(query) {
+  const limit = Number.parseInt(query.limit, 10);
+  if (query.limit && (!Number.isFinite(limit) || limit < 1)) {
+    throw new HttpError(422, 'limit debe ser un entero mayor o igual a 1');
+  }
+
+  const offset = Number.parseInt(query.offset, 10);
+  if (query.offset && (!Number.isFinite(offset) || offset < 0)) {
+    throw new HttpError(422, 'offset debe ser un entero mayor o igual a 0');
+  }
+}
+
 function matchFilter(cellValue, expectedValue, operator) {
   const normalizedCell = String(cellValue ?? '');
   const normalizedExpected = String(expectedValue);
@@ -171,6 +183,7 @@ function paginate(rows, page, limit, maxPageSize, defaultPageSize) {
 
 module.exports = {
   validateQuery,
+  validateDistinctQuery,
   applyFilters,
   applySort,
   selectFields,

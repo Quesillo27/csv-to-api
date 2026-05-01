@@ -1,6 +1,6 @@
 {
   "name": "csv-to-api",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Convierte archivos CSV en una REST API con filtros validados, exploración de esquema y estadísticas",
   "main": "server.js",
   "scripts": {

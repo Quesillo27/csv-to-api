@@ -19,6 +19,7 @@ const {
 } = require('../services/dataset-service');
 const {
   validateQuery,
+  validateDistinctQuery,
   applyFilters,
   applySort,
   selectFields,
@@ -156,6 +157,7 @@ router.get('/datasets/:id/distinct/:field', (req, res, next) => {
   try {
     const dataset = getDatasetOrThrow(req.params.id);
     assertColumnExists(dataset.headers, req.params.field);
+    validateDistinctQuery(req.query);
     return sendSuccess(
       res,
       buildDistinctValues(dataset, req.params.field, req.query),

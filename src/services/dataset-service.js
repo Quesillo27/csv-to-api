@@ -16,8 +16,23 @@ function ensureUploadDir(uploadDir) {
 }
 
 function parseCsvContent(content) {
+  let headers = [];
   const rows = parse(content, {
-    columns: true,
+    bom: true,
+    columns: (headerRow) => {
+      headers = headerRow.map((header) => String(header ?? '').trim());
+
+      if (headers.some((header) => header.length === 0)) {
+        throw new HttpError(422, 'El CSV contiene encabezados vacios');
+      }
+
+      const duplicates = headers.filter((header, index) => headers.indexOf(header) !== index);
+      if (duplicates.length > 0) {
+        throw new HttpError(422, `El CSV contiene encabezados duplicados: ${Array.from(new Set(duplicates)).join(', ')}`);
+      }
+
+      return headers;
+    },
     skip_empty_lines: true,
     trim: true,
     relax_quotes: true
@@ -26,8 +41,6 @@ function parseCsvContent(content) {
   if (rows.length === 0) {
     throw new HttpError(400, 'El CSV esta vacio o no tiene datos');
   }
-
-  const headers = Object.keys(rows[0]);
   if (headers.length === 0) {
     throw new HttpError(422, 'El CSV no contiene encabezados validos');
   }

@@ -165,6 +165,22 @@ describe('csv-to-api', () => {
     assert.equal(response.body.data.values[0].value, 'Madrid');
   });
 
+  test('GET /datasets/:id/distinct/:field rechaza limit invalido', async () => {
+    const datasetId = await createInlineDataset();
+    const response = await request('GET', `/datasets/${datasetId}/distinct/city?limit=0`);
+
+    assert.equal(response.status, 422);
+    assert.match(response.body.message, /limit debe ser/);
+  });
+
+  test('GET /datasets/:id/distinct/:field rechaza offset invalido', async () => {
+    const datasetId = await createInlineDataset();
+    const response = await request('GET', `/datasets/${datasetId}/distinct/city?offset=-1`);
+
+    assert.equal(response.status, 422);
+    assert.match(response.body.message, /offset debe ser/);
+  });
+
   test('GET /datasets/:id/data retorna todos los registros paginados', async () => {
     const datasetId = await createInlineDataset();
     const response = await request('GET', `/datasets/${datasetId}/data`);
@@ -332,6 +348,26 @@ describe('csv-to-api', () => {
 
     assert.equal(response.status, 400);
     assert.match(response.body.message, /vacio|datos/);
+  });
+
+  test('POST /datasets/inline rechaza encabezados duplicados', async () => {
+    const response = await request('POST', '/datasets/inline', {
+      headers: { 'Content-Type': 'text/plain' },
+      body: 'name,name\nAlice,Bob'
+    });
+
+    assert.equal(response.status, 422);
+    assert.match(response.body.message, /encabezados duplicados/);
+  });
+
+  test('POST /datasets/inline rechaza encabezados vacios', async () => {
+    const response = await request('POST', '/datasets/inline', {
+      headers: { 'Content-Type': 'text/plain' },
+      body: 'name,,city\nAlice,30,Madrid'
+    });
+
+    assert.equal(response.status, 422);
+    assert.match(response.body.message, /encabezados vacios/);
   });
 
   test('DELETE /datasets/:id elimina el dataset', async () => {

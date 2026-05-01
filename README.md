@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/Quesillo27/csv-to-api/actions/workflows/ci.yml/badge.svg) ![Node.js](https://img.shields.io/badge/Node.js-20+-green) ![License](https://img.shields.io/badge/license-MIT-orange)
 
-Convierte archivos CSV en una REST API lista para explorar datos sin montar una base de datos. La revision 1.1.0 agrega validacion estricta de queries, respuestas uniformes, metrics reales de salud y endpoints de exploracion de esquema y valores distintos.
+Convierte archivos CSV en una REST API lista para explorar datos sin montar una base de datos. La revision 1.1.1 endurece la carga de CSV para rechazar encabezados vacios o duplicados y valida mejor la paginacion de `distinct`, ademas de conservar las mejoras de validacion estricta de queries, respuestas uniformes, metrics reales de salud y endpoints de exploracion.
 
 ## Instalacion en 3 comandos
 
@@ -83,6 +83,8 @@ curl -s "http://localhost:3000/datasets/<id>/distinct/city?search=mad"
 | `limit=N` | `?limit=20` | Tamano de pagina |
 | `fields=a,b` | `?fields=name,city` | Proyeccion de columnas |
 
+`GET /datasets/:id/distinct/:field` tambien valida `limit >= 1` y `offset >= 0`, y el parser rechaza CSVs con encabezados vacios o duplicados para evitar perdida silenciosa de columnas.
+
 ## Docker
 
 ```bash
@@ -94,7 +96,7 @@ docker run --rm -p 3000:3000 --env CORS_ORIGINS=http://localhost:3000 csv-to-api
 
 - `make dev`, `make test`, `make build`, `make docker`, `make lint`
 - `./setup.sh` instala dependencias y prepara `.env`
-- `npm test` ejecuta 29 pruebas de comportamiento real
+- `npm test` ejecuta 33 pruebas de comportamiento real
 
 ## Roadmap
 

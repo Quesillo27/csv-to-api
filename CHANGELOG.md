@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-05-01
+
+### Fixed
+- El parser ahora rechaza encabezados CSV vacios o duplicados, evitando perdida silenciosa de columnas al cargar datasets.
+- `GET /datasets/:id/distinct/:field` ahora valida `limit` y `offset` invalidos con errores `422` en lugar de normalizarlos en silencio.
+
 ## [1.1.0] - 2026-04-21
 
 ### Added
